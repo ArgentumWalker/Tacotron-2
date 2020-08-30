@@ -7,6 +7,7 @@ from tensorflow.contrib.seq2seq import dynamic_decode
 from tacotron.models.Architecture_wrappers import TacotronEncoderCell, TacotronDecoderCell
 from tacotron.models.custom_decoder import CustomDecoder
 from tacotron.models.attention import LocationSensitiveAttention
+from tacotron.models.stepwise_attention import BahdanauStepwiseMonotonicAttention
 
 import numpy as np
 
@@ -25,8 +26,8 @@ class Tacotron():
 	def __init__(self, hparams):
 		self._hparams = hparams
 
-	def initialize(self, inputs, input_lengths, mel_targets=None, stop_token_targets=None, linear_targets=None, targets_lengths=None, gta=False,
-			global_step=None, is_training=False, is_evaluating=False, split_infos=None):
+	def initialize(self, inputs, input_lengths, mel_targets=None, stop_token_targets=None, linear_targets=None,
+			targets_lengths=None, gta=False, global_step=None, is_training=False, is_evaluating=False, split_infos=None):
 		"""
 		Initializes the model for inference
 		sets "mel_outputs" and "alignments" fields.
@@ -131,9 +132,17 @@ class Tacotron():
 					#Attention Decoder Prenet
 					prenet = Prenet(is_training, layers_sizes=hp.prenet_layers, drop_rate=hp.tacotron_dropout_rate, scope='decoder_prenet')
 					#Attention Mechanism
-					attention_mechanism = LocationSensitiveAttention(hp.attention_dim, encoder_outputs, hparams=hp, is_training=is_training,
-						mask_encoder=hp.mask_encoder, memory_sequence_length=tf.reshape(tower_input_lengths[i], [-1]), smoothing=hp.smoothing,
-						cumulate_weights=hp.cumulative_weights)
+					if self._hparams.tacotron_use_stepwise_attention:
+						print("Using stepwise attention")
+						attention_mechanism = BahdanauStepwiseMonotonicAttention(
+							hp.attention_dim, encoder_outputs,
+							memory_sequence_length=tf.reshape(tower_input_lengths[i], [-1])
+						)
+					else:
+						print("Using location sensetive")
+						attention_mechanism = LocationSensitiveAttention(hp.attention_dim, encoder_outputs, hparams=hp, is_training=is_training,
+							mask_encoder=hp.mask_encoder, memory_sequence_length=tf.reshape(tower_input_lengths[i], [-1]), smoothing=hp.smoothing,
+							cumulate_weights=hp.cumulative_weights)
 					#Decoder LSTM Cells
 					decoder_lstm = DecoderRNN(is_training, layers=hp.decoder_layers,
 						size=hp.decoder_lstm_units, zoneout=hp.tacotron_zoneout_rate, scope='decoder_LSTM')

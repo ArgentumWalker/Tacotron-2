@@ -7,8 +7,7 @@ from tensorflow.python.ops import array_ops, math_ops, nn_ops, variable_scope
 
 
 #From https://github.com/tensorflow/tensorflow/blob/r1.7/tensorflow/contrib/seq2seq/python/ops/attention_wrapper.py
-def _compute_attention(attention_mechanism, cell_output, attention_state,
-					   attention_layer, prev_max_attentions):
+def _compute_attention(attention_mechanism, cell_output, attention_state, prev_max_attentions):
 	"""Computes the attention and alignments for a given attention_mechanism."""
 	alignments, next_attention_state, max_attentions = attention_mechanism(
 		cell_output, state=attention_state, prev_max_attentions=prev_max_attentions)
@@ -25,12 +24,7 @@ def _compute_attention(attention_mechanism, cell_output, attention_state,
 	#   [batch_size, 1, memory_size].
 	# we then squeeze out the singleton dim.
 	context = math_ops.matmul(expanded_alignments, attention_mechanism.values)
-	context = array_ops.squeeze(context, [1])
-
-	if attention_layer is not None:
-		attention = attention_layer(array_ops.concat([cell_output, context], 1))
-	else:
-		attention = context
+	attention = array_ops.squeeze(context, [1])
 
 	return attention, alignments, next_attention_state, max_attentions
 

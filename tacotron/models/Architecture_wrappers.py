@@ -188,7 +188,6 @@ class TacotronDecoderCell(RNNCell):
 		context_vector, alignments, cumulated_alignments, max_attentions = _compute_attention(self._attention_mechanism,
 			LSTM_output,
 			previous_alignments,
-			attention_layer=None,
 			prev_max_attentions=state.max_attentions)
 
 		#Concat LSTM outputs and context vector to form projections inputs
